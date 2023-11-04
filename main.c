@@ -1,27 +1,39 @@
 #include <stdio.h>
+
 #define MAXN 100000
+#define DEPENDENCY_INDEX 0
+#define VALUE_INDEX 1
 
 int H[MAXN][2];
 int N, N_CHEATS;
 
 
-int path(int dependency, int current_weight) {
-    int paths_sum[N];
+int path(int dependency, int hours_current_task) {
+    int paths_sum_hours[N];
     int children_found = 0;
+
+    /* This section searches in the array all the children dependent on the current task
+     the argument dependency is the index of the current task in the array.
+
+     After finding a dependent task, a recursive call is made using its index.
+     */
     for (int i=0; i<N; i++) {
-        if (H[i][0] == dependency) {
-            paths_sum[children_found] = path(i, H[i][1]);
+        if (H[i][DEPENDENCY_INDEX] == dependency) {
+            paths_sum_hours[children_found] = path(i, H[i][VALUE_INDEX]);
             children_found+=1;
         }
     }
 
+    /* After finding all the elements which are dependent on the current task
+     * it looks for the one that takes the longest time, which is then summed to the time of the current task and returned.
+     * */
     int greatest = 0;
     for (int i=0; i < children_found; i++) {
-        if (paths_sum[i] > greatest)
-            greatest = paths_sum[i];
+        if (paths_sum_hours[i] > greatest)
+            greatest = paths_sum_hours[i];
     }
 
-    return current_weight + greatest;
+    return hours_current_task + greatest;
 }
 
 int main() {
@@ -38,7 +50,7 @@ int main() {
 
     // Initializing the array
     for(i=0; i<N; i++)
-        fscanf(fr, "%d %d", &H[i][0], &H[i][1]);
+        fscanf(fr, "%d %d", &H[i][DEPENDENCY_INDEX], &H[i][VALUE_INDEX]);
 
 
     // ------------------------------------------ Actual algorithm ------------------------------------------

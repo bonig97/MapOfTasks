@@ -1,0 +1,3 @@
+/Users/fabioceccatelli/CLionProjects/MapOfTasks/cmake-build-debug/CMakeFiles/MapOfTasks.dir
+/Users/fabioceccatelli/CLionProjects/MapOfTasks/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/fabioceccatelli/CLionProjects/MapOfTasks/cmake-build-debug/CMakeFiles/rebuild_cache.dir

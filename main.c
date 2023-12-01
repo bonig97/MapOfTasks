@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAXN 100000
 #define DEPENDENCY_INDEX 0
@@ -6,6 +7,50 @@
 
 int H[MAXN][2];
 int N, N_CHEATS;
+
+typedef struct node {
+    int value;
+    struct node **children;
+    int nChildren;
+} Node;
+
+Node *created[MAXN];
+Node *head;
+
+Node *createNode(int position, int value) {
+    if (H[position][DEPENDENCY_INDEX] == -1) {
+        Node *n = malloc(sizeof(Node));
+        n->value = value;
+        head = n;
+        created[position] = n;
+        return n;
+    }
+
+    if (created[H[position][DEPENDENCY_INDEX]] == NULL) {
+        int parentPosition = H[position][DEPENDENCY_INDEX];
+        Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
+        Node *n = malloc(sizeof(Node));
+        n->value = value;
+
+        parent->children = realloc(parent->children, sizeof(Node)*(parent->nChildren+1));
+        parent->children[parent->nChildren] = n;
+        parent->nChildren++;
+
+        created[position] = n;
+        return n;
+    }
+    else
+        return created[H[position][DEPENDENCY_INDEX]];
+}
+
+void createTree() {
+    for(int i=0; i<MAXN; i++) {
+        // Ci dice se è già stato creato il node.
+        createNode(i, H[i][VALUE_INDEX]);
+
+    }
+    printf("%d", head->value);
+}
 
 
 int path(int dependency, int hours_current_task) {
@@ -39,11 +84,9 @@ int path(int dependency, int hours_current_task) {
 int main() {
 
     // ------------------------------------------ Initializations ------------------------------------------
-
     FILE *fr;
     int i;
-
-    fr = fopen("/Users/fabioceccatelli/CLionProjects/MapOfTasks/input_2.txt", "r");
+    fr = fopen("/Users/fabioceccatelli_uni/CLionProjects/MapOfTasks/input_2.txt", "r");
 
     // Setting the number of total tasks and the number of cheats allowed
     fscanf(fr, "%d %d", &N, &N_CHEATS);
@@ -55,8 +98,9 @@ int main() {
 
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
-    int longest_path = path(-1, 0);
-    printf("Longest path: %d", longest_path);
+    //int longest_path = path(-1, 0);
+    //printf("Longest path: %d", longest_path);
+    createTree();
 
     return 0;
 }

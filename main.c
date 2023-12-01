@@ -10,7 +10,8 @@ int N, N_CHEATS;
 
 typedef struct node {
     int value;
-    struct node **children;
+    struct node *firstChild;
+    struct node *sibling;
     int nChildren;
 } Node;
 
@@ -18,7 +19,10 @@ Node *created[MAXN];
 Node *head;
 
 Node *createNode(int position, int value) {
-    if (H[position][DEPENDENCY_INDEX] == -1) {
+    if (created[position] != NULL) {
+        return created[position];
+    }
+    else if (H[position][DEPENDENCY_INDEX] == -1) {
         Node *n = malloc(sizeof(Node));
         n->value = value;
         head = n;
@@ -26,25 +30,31 @@ Node *createNode(int position, int value) {
         return n;
     }
 
-    if (created[H[position][DEPENDENCY_INDEX]] == NULL) {
+    else {
         int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
         Node *n = malloc(sizeof(Node));
         n->value = value;
 
-        parent->children = realloc(parent->children, sizeof(Node)*(parent->nChildren+1));
-        parent->children[parent->nChildren] = n;
+        Node *child;
+        if (parent->firstChild == NULL) {
+            parent->firstChild = n;
+        } else {
+            child = parent -> firstChild;
+            while (child->sibling != NULL)
+                child = child -> sibling;
+            child -> sibling = n;
+        }
         parent->nChildren++;
 
         created[position] = n;
         return n;
     }
-    else
-        return created[H[position][DEPENDENCY_INDEX]];
+
 }
 
 void createTree() {
-    for(int i=0; i<MAXN; i++) {
+    for(int i=0; i<N; i++) {
         // Ci dice se è già stato creato il node.
         createNode(i, H[i][VALUE_INDEX]);
 

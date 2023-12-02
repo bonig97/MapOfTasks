@@ -6,14 +6,14 @@
 #define VALUE_INDEX 1
 
 unsigned long long H[MAXN][2];
-int N, N_CHEATS;
+unsigned int N, N_CHEATS;
 
 typedef struct node {
     unsigned long long value;
     struct node *parent;
     struct node *firstChild;
     struct node *sibling;
-    unsigned long long  totalCost;
+    unsigned long long totalCost;
 } Node;
 
 Node *created[MAXN];
@@ -26,7 +26,7 @@ unsigned long long getHighestCost(Node *node) {
     node = node->firstChild;
     unsigned long long  highest = node->totalCost;
     while(node != NULL) {
-        highest = highest > node->totalCost ? highest : node->totalCost;
+        highest = highest >= node->totalCost ? highest : node->totalCost;
         node = node->sibling;
     }
     return highest + parentValue;
@@ -38,7 +38,8 @@ void setHighestCost(Node *node) {
         setHighestCost(node->parent);
 }
 
-Node *createNode(int position, unsigned long long value) {
+
+Node *createNode(unsigned int position, unsigned long long value) {
     if (created[position] != NULL) {
         return created[position];
     }
@@ -55,7 +56,7 @@ Node *createNode(int position, unsigned long long value) {
     }
 
     else {
-        int parentPosition = H[position][DEPENDENCY_INDEX];
+        unsigned int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
         Node *n = malloc(sizeof(Node));
         n->value = value;
@@ -69,8 +70,10 @@ Node *createNode(int position, unsigned long long value) {
             parent->firstChild = n;
         } else {
             child = parent -> firstChild;
-            while (child->sibling != NULL)
+            while (child->sibling != NULL) {
                 child = child -> sibling;
+            }
+
             child -> sibling = n;
         }
         setHighestCost(parent);
@@ -85,22 +88,34 @@ void createTree() {
     for(int i=0; i<N; i++) {
         // Ci dice se è già stato creato il node.
         createNode(i, H[i][VALUE_INDEX]);
-
     }
 }
 
-Node *removeNode(Node *node){
-    Node *hvn = node;
-    while(node != NULL) {
-        hvn = hvn->totalCost > node->totalCost ? hvn : node;
-        node = node->sibling;
-    }
-    if (hvn->firstChild != NULL) {
-        Node *nchild = removeNode(hvn->firstChild);
-        hvn = hvn->value > nchild->value ? hvn : nchild;
-    }
-    return hvn;
+Node *cheat (Node *node) {
+    Node *child = node->firstChild;
+    if (child == NULL)
+        return node;
 
+    Node *highest = child;
+    Node *secondHighest = NULL;
+    child = child -> sibling;
+    while (child) {
+        if (highest->totalCost > child->totalCost) {
+            secondHighest = secondHighest != NULL && secondHighest -> totalCost > child -> totalCost ? secondHighest : child;
+        }
+        else {
+            secondHighest = highest;
+            highest = child;
+        }
+        child = child -> sibling;
+    }
+
+    Node *cheatOpt = cheat(highest);
+    if (secondHighest == NULL)
+        return cheatOpt->value > node->value ? cheatOpt : node;
+    if (node->totalCost-node->value  >= node->value + secondHighest->totalCost)
+        return cheatOpt;
+    return node;
 }
 
 
@@ -129,7 +144,7 @@ int main() {
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
     for (i=0; i<N_CHEATS; i++) {
-        Node *nodeToRemove = removeNode(head);
+        Node *nodeToRemove = cheat(head);
         nodeToRemove->value = 0;
         setHighestCost(nodeToRemove);
     }

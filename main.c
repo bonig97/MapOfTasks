@@ -5,27 +5,26 @@
 #define DEPENDENCY_INDEX 0
 #define VALUE_INDEX 1
 
-int H[MAXN][2];
+unsigned long long H[MAXN][2];
 int N, N_CHEATS;
 
 typedef struct node {
-    int value;
+    unsigned long long value;
     struct node *parent;
     struct node *firstChild;
     struct node *sibling;
-    int nChildren;
-    int totalCost;
+    unsigned long long  totalCost;
 } Node;
 
 Node *created[MAXN];
 Node *head;
 
-int getHighestCost(Node *node) {
-    int parentValue = node->value;
+unsigned long long getHighestCost(Node *node) {
+    unsigned long long parentValue = node->value;
     if (node->firstChild == NULL) return parentValue;
 
     node = node->firstChild;
-    int highest = node->totalCost;
+    unsigned long long  highest = node->totalCost;
     while(node != NULL) {
         highest = highest > node->totalCost ? highest : node->totalCost;
         node = node->sibling;
@@ -39,7 +38,7 @@ void setHighestCost(Node *node) {
         setHighestCost(node->parent);
 }
 
-Node *createNode(int position, int value) {
+Node *createNode(int position, unsigned long long value) {
     if (created[position] != NULL) {
         return created[position];
     }
@@ -74,7 +73,6 @@ Node *createNode(int position, int value) {
                 child = child -> sibling;
             child -> sibling = n;
         }
-        parent->nChildren++;
         setHighestCost(parent);
 
         created[position] = n;
@@ -106,6 +104,7 @@ Node *removeNode(Node *node){
 }
 
 
+
 int main() {
 
     // ------------------------------------------ Initializations ------------------------------------------
@@ -117,12 +116,13 @@ int main() {
     fscanf(fr, "%d %d", &N, &N_CHEATS);
 
     // Initializing the array
-    for(i=0; i<N; i++)
-        fscanf(fr, "%d %d", &H[i][DEPENDENCY_INDEX], &H[i][VALUE_INDEX]);
-    fclose(fr);
-    for (int j = 0; j < N; ++j) {
-        created[j] = NULL;
+    for(i=0; i<N; i++) {
+        fscanf(fr, "%lld %lld", &H[i][DEPENDENCY_INDEX], &H[i][VALUE_INDEX]);
+        created[i] = NULL;
     }
+    fclose(fr);
+
+    head = NULL;
     createTree();
 
 
@@ -135,7 +135,7 @@ int main() {
     }
     FILE *fw = fopen("output.txt", "w");
 
-    fprintf(fw, "%d", head->totalCost);
+    fprintf(fw, "%lld", head->totalCost);
     fclose(fw);
     return 0;
 }

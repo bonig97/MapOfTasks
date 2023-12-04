@@ -19,13 +19,20 @@ typedef struct node {
 Node *created[MAXN];
 Node *head;
 
+void freeTree(Node *node) {
+    if (node == NULL) return;
+    freeTree(node->firstChild);
+    freeTree(node->sibling);
+    free(node);
+}
+
 unsigned long long getHighestCost(Node *node) {
     unsigned long long parentValue = node->value;
-    if (node->firstChild == NULL) return parentValue;
+    if (node->firstChild == NULL) return node->value;
 
     node = node->firstChild;
     unsigned long long  highest = node->totalCost;
-    while(node != NULL) {
+    while (node != NULL) {
         highest = highest >= node->totalCost ? highest : node->totalCost;
         node = node->sibling;
     }
@@ -37,7 +44,6 @@ void setHighestCost(Node *node) {
     if (node->parent != NULL)
         setHighestCost(node->parent);
 }
-
 
 Node *createNode(unsigned int position, unsigned long long value) {
     if (created[position] != NULL) {
@@ -54,7 +60,6 @@ Node *createNode(unsigned int position, unsigned long long value) {
         created[position] = n;
         return n;
     }
-
     else {
         unsigned int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
@@ -118,10 +123,7 @@ Node *cheat (Node *node) {
     return node;
 }
 
-
-
 int main() {
-
     // ------------------------------------------ Initializations ------------------------------------------
     FILE *fr;
     int i;
@@ -140,7 +142,6 @@ int main() {
     head = NULL;
     createTree();
 
-
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
     for (i=0; i<N_CHEATS; i++) {
@@ -152,5 +153,7 @@ int main() {
 
     fprintf(fw, "%lld", head->totalCost);
     fclose(fw);
+
+    freeTree(head);
     return 0;
 }

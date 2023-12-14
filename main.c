@@ -19,6 +19,13 @@ typedef struct node {
 Node *created[MAXN];
 Node *head;
 
+void freeTree(Node *node) {
+    if (node == NULL) return;
+    freeTree(node->firstChild);
+    freeTree(node->sibling);
+    free(node);
+}
+
 long long getHighestCost(Node *node) {
     long long parentValue = node->value;
     if (node->firstChild == NULL) return parentValue;
@@ -54,7 +61,6 @@ Node *createNode(unsigned int position, long long value) {
         created[position] = n;
         return n;
     }
-
     else {
         unsigned int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
@@ -86,6 +92,7 @@ Node *createNode(unsigned int position, long long value) {
 
 void createTree() {
     for(int i=0; i<N; i++) {
+        // Ci dice se è già stato creato il node.
         createNode(i, H[i][VALUE_INDEX]);
     }
 }
@@ -117,10 +124,7 @@ Node *cheat (Node *node, int remaining_cheats) {
     return node;
 }
 
-
-
 int main() {
-
     // ------------------------------------------ Initializations ------------------------------------------
     FILE *fr;
     int i;
@@ -151,5 +155,7 @@ int main() {
 
     fprintf(fw, "%lld\n", head->totalCost);
     fclose(fw);
+
+    freeTree(head);
     return 0;
 }

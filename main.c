@@ -97,7 +97,7 @@ void createTree() {
     }
 }
 
-Node *cheat (Node *node, int remaining_cheats) {
+Node* cheat(Node *node, int remaining_cheats) {
     Node *child = node->firstChild;
     if (child == NULL)
         return node;
@@ -119,9 +119,15 @@ Node *cheat (Node *node, int remaining_cheats) {
     Node *cheatOpt = cheat(highest, remaining_cheats);
     if (secondHighest == NULL)
         return cheatOpt->value > node->value ? cheatOpt : node;
-    if (remaining_cheats > 0 || node->totalCost-node->value  >= node->value + secondHighest->totalCost)
+
+    if (cheatOpt->value < node->value)
+        return node;
+    if (remaining_cheats > 0)
         return cheatOpt;
-    return node;
+    if (node->totalCost-node->value <= secondHighest->totalCost + node->value)
+        return node;
+
+    return cheatOpt;
 }
 
 int main() {

@@ -5,26 +5,26 @@
 #define DEPENDENCY_INDEX 0
 #define VALUE_INDEX 1
 
-unsigned long long H[MAXN][2];
-unsigned int N, N_CHEATS;
+long long H[MAXN][2];
+int N, N_CHEATS;
 
 typedef struct node {
-    unsigned long long value;
+    long long value;
     struct node *parent;
     struct node *firstChild;
     struct node *sibling;
-    unsigned long long totalCost;
+    long long totalCost;
 } Node;
 
 Node *created[MAXN];
 Node *head;
 
-unsigned long long getHighestCost(Node *node) {
-    unsigned long long parentValue = node->value;
+long long getHighestCost(Node *node) {
+    long long parentValue = node->value;
     if (node->firstChild == NULL) return parentValue;
 
     node = node->firstChild;
-    unsigned long long  highest = node->totalCost;
+    long long  highest = node->totalCost;
     while(node != NULL) {
         highest = highest >= node->totalCost ? highest : node->totalCost;
         node = node->sibling;
@@ -39,7 +39,7 @@ void setHighestCost(Node *node) {
 }
 
 
-Node *createNode(unsigned int position, unsigned long long value) {
+Node *createNode(unsigned int position, long long value) {
     if (created[position] != NULL) {
         return created[position];
     }
@@ -86,12 +86,11 @@ Node *createNode(unsigned int position, unsigned long long value) {
 
 void createTree() {
     for(int i=0; i<N; i++) {
-        // Ci dice se è già stato creato il node.
         createNode(i, H[i][VALUE_INDEX]);
     }
 }
 
-Node *cheat (Node *node) {
+Node *cheat (Node *node, int remaining_cheats) {
     Node *child = node->firstChild;
     if (child == NULL)
         return node;
@@ -110,10 +109,10 @@ Node *cheat (Node *node) {
         child = child -> sibling;
     }
 
-    Node *cheatOpt = cheat(highest);
+    Node *cheatOpt = cheat(highest, remaining_cheats);
     if (secondHighest == NULL)
         return cheatOpt->value > node->value ? cheatOpt : node;
-    if (node->totalCost-node->value  >= node->value + secondHighest->totalCost)
+    if (remaining_cheats > 0 || node->totalCost-node->value  >= node->value + secondHighest->totalCost)
         return cheatOpt;
     return node;
 }
@@ -144,13 +143,13 @@ int main() {
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
     for (i=0; i<N_CHEATS; i++) {
-        Node *nodeToRemove = cheat(head);
+        Node *nodeToRemove = cheat(head, N_CHEATS-i-1);
         nodeToRemove->value = 0;
         setHighestCost(nodeToRemove);
     }
     FILE *fw = fopen("output.txt", "w");
 
-    fprintf(fw, "%lld", head->totalCost);
+    fprintf(fw, "%lld\n", head->totalCost);
     fclose(fw);
     return 0;
 }

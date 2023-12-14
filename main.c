@@ -92,7 +92,6 @@ Node *createNode(unsigned int position, long long value) {
 
 void createTree() {
     for(int i=0; i<N; i++) {
-        // Ci dice se è già stato creato il node.
         createNode(i, H[i][VALUE_INDEX]);
     }
 }
@@ -122,10 +121,17 @@ Node* cheat(Node *node, int remaining_cheats) {
 
     if (cheatOpt->value < node->value)
         return node;
+
     if (remaining_cheats > 0)
         return cheatOpt;
-    if (node->totalCost-node->value <= secondHighest->totalCost + node->value)
-        return node;
+
+    if (node->totalCost-cheatOpt->value > secondHighest->totalCost+node->value)
+        return cheatOpt;
+    if ()
+
+    //if (remaining_cheats == 0 && node->totalCost-node->value <= secondHighest->totalCost + node->value)
+    //    return node;
+
 
     return cheatOpt;
 }

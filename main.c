@@ -124,14 +124,17 @@ Node* cheat(Node *node, int remaining_cheats) {
 
     if (remaining_cheats > 0)
         return cheatOpt;
+    /*
+     *      0
+     *   2     2
+     *
+     */
 
-    if (node->totalCost-cheatOpt->value > secondHighest->totalCost+node->value)
-        return cheatOpt;
-    if ()
+    if (node->totalCost - node->value < secondHighest->totalCost + node->value)
+        return node;
 
     //if (remaining_cheats == 0 && node->totalCost-node->value <= secondHighest->totalCost + node->value)
     //    return node;
-
 
     return cheatOpt;
 }

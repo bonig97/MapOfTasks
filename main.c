@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #define MAXN 100000
 #define DEPENDENCY_INDEX 0
@@ -13,17 +14,13 @@ typedef struct node {
     struct node *parent;
     struct node *firstChild;
     struct node *sibling;
-    struct node *copy;
     long long totalCost;
-    long long resetVal;
+    long long * cache
 } Node;
-
 
 Node *created[MAXN];
 Node *head;
 
-int cheatsUsed = 0;
-Node** prison = NULL;
 
 
 void freeTree(Node *node) {
@@ -33,26 +30,17 @@ void freeTree(Node *node) {
     free(node);
 }
 
-
-Node* getGreaterChild(Node *node) {
-    node = node->firstChild;
-    if (node == NULL)
-        return NULL;
-
-    Node* highest = node;
-    while(node != NULL) {
-        highest = highest->totalCost >= node->totalCost ? highest : node;
-        node = node->sibling;
-    }
-    return highest;
-}
-
 long long getHighestCost(Node *node) {
     long long parentValue = node->value;
     if (node->firstChild == NULL) return parentValue;
 
-    Node* highest = getGreaterChild(node);
-    return highest->totalCost + parentValue;
+    node = node->firstChild;
+    long long highest = node->totalCost;
+    while (node != NULL) {
+        highest = highest >= node->totalCost ? highest : node->totalCost;
+        node = node->sibling;
+    }
+    return highest + parentValue;
 }
 
 void setHighestCost(Node *node) {
@@ -61,78 +49,50 @@ void setHighestCost(Node *node) {
         setHighestCost(node->parent);
 }
 
-void replace(Node* source, Node* destination) {
-    // Assegno parent e fc direttamente
-    destination->parent = source->parent;
-    destination->firstChild = source->firstChild;
-
-    // Ciclo tutti i figli e assegno il padre
-    Node* child = destination->firstChild;
-    while(child != NULL){
-        child->parent = destination;
-        child = child->sibling;
+void initCache(Node *node) {
+    node->cache = malloc((N_CHEATS+1)*sizeof(long long));
+    for (int i=0; i<=N_CHEATS; i++) {
+        node->cache[i] = -1;
     }
 
-
-    if (source->parent->firstChild == source) {
-        destination->sibling = source->parent->firstChild->sibling;
-        source->parent->firstChild = destination;
-    }
-    else {
-        Node *parentFC = source->parent->firstChild;
-        while(parentFC->sibling != source) {
-            parentFC = parentFC->sibling;
-        }
-        destination->sibling = parentFC->sibling->sibling;
-        parentFC->sibling = destination;
-    }
-}
-
-void resetNode(Node *node) {
-    replace(node->copy, node);
-    node->copy = NULL;
-    setHighestCost(node);
-    cheatsUsed--;
-}
-
-Node *createEmptyNode(long long value) {
-    Node *n = malloc(sizeof(Node));
-    n->value = value;
-    n->resetVal = value;
-    n->totalCost = value;
-    n->firstChild = NULL;
-    n->sibling = NULL;
-    n->copy = NULL;
-    n->parent = NULL;
-    return n;
 }
 
 Node *createNode(unsigned int position, long long value) {
     if (created[position] != NULL) {
         return created[position];
-    }
-    else if (H[position][DEPENDENCY_INDEX] == -1) {
-        Node *n = createEmptyNode(value);
+    } else if (H[position][DEPENDENCY_INDEX] == -1) {
+        Node *n = malloc(sizeof(Node));
+        n->value = value;
+        n->totalCost = value;
+        n->firstChild = NULL;
+        n->sibling = NULL;
+        n->parent = NULL;
+
+        initCache(n);
         head = n;
         created[position] = n;
         return n;
-    }
-    else {
+    } else {
         unsigned int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
-        Node *n = createEmptyNode(value);
+        Node *n = malloc(sizeof(Node));
+        n->value = value;
         n->parent = parent;
+        n->totalCost = value;
+        n->firstChild = NULL;
+        n->sibling = NULL;
+        initCache(n);
 
         Node *child;
         if (parent->firstChild == NULL) {
             parent->firstChild = n;
         } else {
-            child = parent -> firstChild;
+            child = parent->firstChild;
             while (child->sibling != NULL) {
-                child = child -> sibling;
+                child = child->sibling;
             }
 
-            child -> sibling = n;
+            child->sibling = n;
         }
         setHighestCost(parent);
 
@@ -142,102 +102,54 @@ Node *createNode(unsigned int position, long long value) {
 
 }
 
-void createTree() {
-    for(int i=0; i<N; i++) {
+Node *createTree() {
+    for (int i = 0; i < N; i++) {
         createNode(i, H[i][VALUE_INDEX]);
     }
+    Node *n = malloc(sizeof(Node));
+    n->value = 0;
+    n->parent = NULL;
+    n->totalCost = 0;
+    n->firstChild = NULL;
+    n->sibling = NULL;
+    n->totalCost = head->totalCost;
+    initCache(n);
+
+    n->firstChild = head;
+    head->parent = n;
+    head = n;
+    return head;
 }
 
 
-void cheatNode(Node *node) {
-    Node* new = createEmptyNode(node->value);
-    new->value = 0;
-    new->totalCost = node->totalCost-node->value;
 
-    replace(node, new);
-
-    node->copy = new;
-    new->copy = node;
-
-    setHighestCost(new);
-
-    int i = 0;
-    while(prison[i] != NULL)
-        i++;
-    prison[i] = node;
-    cheatsUsed++;
+long long min(long long a, long long b) {
+    return a < b ? a : b;
 }
 
-int conflict(Node *node) {
-    long long best = head->totalCost;
-    Node* bestNode = NULL;
-    Node* tested;
-    int indexPr = -1;
-
-    for (int i=N_CHEATS-1; i>=0; i--) {
-        tested = prison[i];
-        if (prison[i] != NULL) {
-            long long initial = head->totalCost;
-
-            tested->copy->value = tested->resetVal;
-            node->value = 0;
-
-            setHighestCost(node);
-            setHighestCost(tested->copy);
-
-            node->value = node->resetVal;
-            tested->copy->value = 0;
-
-            long long testedCost = head->totalCost;
-            setHighestCost(node);
-            setHighestCost(tested->copy);
-
-            if (testedCost < initial && best > testedCost) {
-                best = testedCost;
-                bestNode = prison[i];
-                indexPr = i;
-            } else if (testedCost == best && bestNode != NULL && bestNode->resetVal < node->resetVal) {
-                best = testedCost;
-                bestNode = prison[i];
-                indexPr = i;
-            }
-
-        }
-    }
-
-    if (indexPr >= 0) {
-        prison[indexPr] = NULL;
-        resetNode(bestNode);
-        cheatNode(node);
-        return 1;
-    }
-    return 0;
+long long max(long long a, long long b) {
+    return a > b ? a : b;
 }
 
-void cheat(Node *node) {
-    if (node->copy != NULL)
-        return;
+long long cheat(Node *node, int remaining_cheats, Node* firstSibling);
 
-    Node *gc = NULL;
-    while (gc != getGreaterChild(node)) {
-        gc = getGreaterChild(node);
-        cheat(gc);
+
+long long cheat(Node *node, int remaining_cheats, Node* firstSibling) {
+    if (node == NULL) return 0;
+    if (node->cache[remaining_cheats] != -1) return node->cache[remaining_cheats];
+
+    long long highest = LLONG_MAX;
+    for (int cheatsUsed=remaining_cheats; cheatsUsed>=0; cheatsUsed--) {
+        long long costChild = cheatsUsed > 0 ? cheat(node->firstChild, cheatsUsed-1, NULL) : LLONG_MAX;
+        long long costChildNoHead = cheat(node->firstChild, cheatsUsed, NULL) + node->value;
+
+        long long siblingcost = cheat(node->sibling, remaining_cheats-cheatsUsed, NULL);
+        highest = min(highest, max(min(costChild, costChildNoHead), siblingcost));
     }
 
-
-
-    if (cheatsUsed < N_CHEATS) {
-        cheatNode(node);
-    }
-    else {
-        conflict(node);
-    }
-
-
-
+    node->cache[remaining_cheats] = highest;
+    return highest;
 }
-
-
 
 
 /*
@@ -252,31 +164,24 @@ int main() {
 
     // Setting the number of total tasks and the number of cheats allowed
     fscanf(fr, "%d %d", &N, &N_CHEATS);
-    prison = malloc(sizeof(Node) * N_CHEATS);
-    for (i=0; i<N_CHEATS; i++)
-        prison[i] = NULL;
 
     // Initializing the array
-    for(i=0; i<N; i++) {
+    for (i = 0; i < N; i++) {
         fscanf(fr, "%lld %lld", &H[i][DEPENDENCY_INDEX], &H[i][VALUE_INDEX]);
         created[i] = NULL;
     }
     fclose(fr);
 
-    createTree();
-    Node* newhead = createEmptyNode(0);
-    newhead->firstChild = head;
-    head->parent = newhead;
-    head = newhead;
+    Node *head = createTree();
+
+
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
-    long long final;
-    if (N_CHEATS > 0) {
-        cheat(head->firstChild);
-
-    }
-    setHighestCost(getGreaterChild(head->firstChild));
-    final = head->totalCost;
+    //long long final = head->value + cheat(head, N_CHEATS);
+    //long long finalNoParent = cheat(head, N_CHEATS-1);
+    long long final = head->totalCost;
+    if (N_CHEATS > 0)
+        final = min(cheat(head, N_CHEATS, head)+head->value, cheat(head, N_CHEATS-1, head))  ;
     FILE *fw = fopen("output.txt", "w");
 
     fprintf(fw, "%lld\n", final);

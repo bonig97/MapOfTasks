@@ -131,25 +131,39 @@ long long max(long long a, long long b) {
     return a > b ? a : b;
 }
 
-long long cheat(Node *node, int remaining_cheats, Node* firstSibling);
+long long cheat(Node *node, int remaining_cheats);
 
 
-long long cheat(Node *node, int remaining_cheats, Node* firstSibling) {
+long long cheat(Node *node, int remaining_cheats) {
     if (node == NULL) return 0;
+
     if (node->cache[remaining_cheats] != -1) return node->cache[remaining_cheats];
 
-    long long highest = LLONG_MAX;
+    long long lowest = LLONG_MAX;
     for (int cheatsUsed=remaining_cheats; cheatsUsed>=0; cheatsUsed--) {
-        long long costChild = cheatsUsed > 0 ? cheat(node->firstChild, cheatsUsed-1, NULL) : LLONG_MAX;
-        long long costChildNoHead = cheat(node->firstChild, cheatsUsed, NULL) + node->value;
+        // Calculate the cost of the subtree excluding the tree head
+        long long costChildNoHead = cheatsUsed > 0 ? cheat(node->firstChild, cheatsUsed-1) : LLONG_MAX;
 
-        long long siblingcost = cheat(node->sibling, remaining_cheats-cheatsUsed, NULL);
-        highest = min(highest, max(min(costChild, costChildNoHead), siblingcost));
+        // Calculate the cost of the subtree including the tree head
+        long long costChild = cheat(node->firstChild, cheatsUsed) + node->value;
+
+        // Best option on the subtree
+        long long bestSubtree = min(costChild, costChildNoHead);
+
+        // The maximum cost of subtasks at the same level of the current node
+        long long siblingCost = cheat(node->sibling, remaining_cheats-cheatsUsed);
+
+        // The maximum cost between the current node and the nodes at the same level
+        long long highestLevelCostSubtask = max(bestSubtree, siblingCost);
+        lowest = min(lowest, highestLevelCostSubtask);
     }
 
-    node->cache[remaining_cheats] = highest;
-    return highest;
+    //Memoization
+    node->cache[remaining_cheats] = lowest;
+    return lowest;
 }
+
+
 
 
 /*
@@ -177,8 +191,6 @@ int main() {
 
     // ------------------------------------------ Actual algorithm ------------------------------------------
 
-    //long long final = head->value + cheat(head, N_CHEATS);
-    //long long finalNoParent = cheat(head, N_CHEATS-1);
     long long final = head->totalCost;
     if (N_CHEATS > 0)
         final = min(cheat(head, N_CHEATS, head)+head->value, cheat(head, N_CHEATS-1, head))  ;

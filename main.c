@@ -15,7 +15,7 @@ typedef struct node {
     struct node *firstChild;
     struct node *sibling;
     long long totalCost;
-    long long * cache
+    long long * cache;
 } Node;
 
 Node *created[MAXN];
@@ -55,6 +55,18 @@ void initCache(Node *node) {
         node->cache[i] = -1;
     }
 
+}
+
+Node *initNode(long long value) {
+    Node *n = malloc(sizeof(Node));
+    n->value = value;
+    n->totalCost = value;
+    n->firstChild = NULL;
+    n->sibling = NULL;
+    n->parent = NULL;
+
+    initCache(n);
+    return n;
 }
 
 Node *createNode(unsigned int position, long long value) {
@@ -106,18 +118,6 @@ Node *createTree() {
     for (int i = 0; i < N; i++) {
         createNode(i, H[i][VALUE_INDEX]);
     }
-    Node *n = malloc(sizeof(Node));
-    n->value = 0;
-    n->parent = NULL;
-    n->totalCost = 0;
-    n->firstChild = NULL;
-    n->sibling = NULL;
-    n->totalCost = head->totalCost;
-    initCache(n);
-
-    n->firstChild = head;
-    head->parent = n;
-    head = n;
     return head;
 }
 
@@ -193,7 +193,7 @@ int main() {
 
     long long final = head->totalCost;
     if (N_CHEATS > 0)
-        final = min(cheat(head, N_CHEATS, head)+head->value, cheat(head, N_CHEATS-1, head))  ;
+        final = cheat(head, N_CHEATS);//min(cheat(head, N_CHEATS)+head->value, cheat(head, N_CHEATS-1))  ;
     FILE *fw = fopen("output.txt", "w");
 
     fprintf(fw, "%lld\n", final);

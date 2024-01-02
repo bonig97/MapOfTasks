@@ -21,7 +21,9 @@ typedef struct node {
 Node *created[MAXN];
 Node *head;
 
-
+long long cheat(Node *node, int remaining_cheats);
+long long min(long long a, long long b);
+long long max(long long a, long long b);
 
 void freeTree(Node *node) {
     if (node == NULL) return;
@@ -51,77 +53,71 @@ void setHighestCost(Node *node) {
 
 void initCache(Node *node) {
     node->cache = malloc((N_CHEATS+1)*sizeof(long long));
-    for (int i=0; i<=N_CHEATS; i++) {
+    for (int i = 0; i <= N_CHEATS; i++) {
         node->cache[i] = -1;
     }
-
 }
 
-Node *initNode(long long value) {
+void addChildToParent(Node *parent, Node *child) {
+    if (parent->firstChild == NULL) {
+        parent->firstChild = child;
+    } else {
+        Node *lastChild = parent->firstChild;
+        while (lastChild->sibling != NULL) {
+            lastChild = lastChild->sibling;
+        }
+        lastChild->sibling = child;
+    }
+}
+
+Node *createNode(unsigned int position, long long value) {
+    // Return the existing node if already created
+    if (created[position] != NULL) {
+        return created[position];
+    }
+
+    // Allocate memory for a new node
     Node *n = malloc(sizeof(Node));
+    if (n == NULL) {
+        return NULL; // Handle memory allocation failure
+    }
+
+    // Initialize node fields
     n->value = value;
     n->totalCost = value;
     n->firstChild = NULL;
     n->sibling = NULL;
     n->parent = NULL;
-
     initCache(n);
-    return n;
-}
+    created[position] = n;
 
-Node *createNode(unsigned int position, long long value) {
-    if (created[position] != NULL) {
-        return created[position];
-    } else if (H[position][DEPENDENCY_INDEX] == -1) {
-        Node *n = malloc(sizeof(Node));
-        n->value = value;
-        n->totalCost = value;
-        n->firstChild = NULL;
-        n->sibling = NULL;
-        n->parent = NULL;
-
-        initCache(n);
-        head = n;
-        created[position] = n;
-        return n;
-    } else {
+    // Handle node dependencies
+    if (H[position][DEPENDENCY_INDEX] != -1) {
         unsigned int parentPosition = H[position][DEPENDENCY_INDEX];
         Node *parent = createNode(parentPosition, H[parentPosition][VALUE_INDEX]);
-        Node *n = malloc(sizeof(Node));
-        n->value = value;
-        n->parent = parent;
-        n->totalCost = value;
-        n->firstChild = NULL;
-        n->sibling = NULL;
-        initCache(n);
-
-        Node *child;
-        if (parent->firstChild == NULL) {
-            parent->firstChild = n;
-        } else {
-            child = parent->firstChild;
-            while (child->sibling != NULL) {
-                child = child->sibling;
-            }
-
-            child->sibling = n;
+        if (parent == NULL) {
+            // Handle failure in parent node creation
+            free(n);
+            return NULL;
         }
-        setHighestCost(parent);
 
-        created[position] = n;
-        return n;
+        n->parent = parent;
+        addChildToParent(parent, n);
+        setHighestCost(parent);
+    } else {
+        head = n; // Set as head node if no dependencies
     }
 
+    return n;
 }
 
 Node *createTree() {
     for (int i = 0; i < N; i++) {
         createNode(i, H[i][VALUE_INDEX]);
     }
+
     return head;
 }
-
-
 
 long long min(long long a, long long b) {
     return a < b ? a : b;
@@ -130,9 +126,6 @@ long long min(long long a, long long b) {
 long long max(long long a, long long b) {
     return a > b ? a : b;
 }
-
-long long cheat(Node *node, int remaining_cheats);
-
 
 long long cheat(Node *node, int remaining_cheats) {
     if (node == NULL) return 0;
@@ -158,18 +151,15 @@ long long cheat(Node *node, int remaining_cheats) {
         lowest = min(lowest, highestLevelCostSubtask);
     }
 
-    //Memoization
+    // Memoization
     node->cache[remaining_cheats] = lowest;
+
     return lowest;
 }
-
-
-
 
 /*
  * First case is the simplest, I have a tree with only one leaf
  */
-
 int main() {
     // ------------------------------------------ Initializations ------------------------------------------
     FILE *fr;
@@ -193,12 +183,13 @@ int main() {
 
     long long final = head->totalCost;
     if (N_CHEATS > 0)
-        final = cheat(head, N_CHEATS);//min(cheat(head, N_CHEATS)+head->value, cheat(head, N_CHEATS-1))  ;
+        final = cheat(head, N_CHEATS);
     FILE *fw = fopen("output.txt", "w");
 
     fprintf(fw, "%lld\n", final);
     fclose(fw);
 
     freeTree(head);
+
     return 0;
 }

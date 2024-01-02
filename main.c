@@ -24,6 +24,9 @@ Node *head;
 long long cheat(Node *node, int remaining_cheats);
 long long min(long long a, long long b);
 long long max(long long a, long long b);
+void readInput(const char *filename);
+Node *createAndProcessTree();
+void writeOutput(const char *filename, long long finalCost);
 
 void freeTree(Node *node) {
     if (node == NULL) return;
@@ -133,7 +136,7 @@ long long cheat(Node *node, int remaining_cheats) {
     if (node->cache[remaining_cheats] != -1) return node->cache[remaining_cheats];
 
     long long lowest = LLONG_MAX;
-    for (int cheatsUsed=remaining_cheats; cheatsUsed>=0; cheatsUsed--) {
+    for (int cheatsUsed = remaining_cheats; cheatsUsed >= 0; cheatsUsed--) {
         // Calculate the cost of the subtree excluding the tree head
         long long costChildNoHead = cheatsUsed > 0 ? cheat(node->firstChild, cheatsUsed-1) : LLONG_MAX;
 
@@ -157,38 +160,52 @@ long long cheat(Node *node, int remaining_cheats) {
     return lowest;
 }
 
-/*
- * First case is the simplest, I have a tree with only one leaf
- */
-int main() {
-    // ------------------------------------------ Initializations ------------------------------------------
-    FILE *fr;
-    int i;
-    fr = fopen("input.txt", "r");
+void readInput(const char *filename) {
+    FILE *fr = fopen(filename, "r");
+    if (fr == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
 
-    // Setting the number of total tasks and the number of cheats allowed
+    // Read the number of tasks and cheats
     fscanf(fr, "%d %d", &N, &N_CHEATS);
 
-    // Initializing the array
-    for (i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
         fscanf(fr, "%lld %lld", &H[i][DEPENDENCY_INDEX], &H[i][VALUE_INDEX]);
         created[i] = NULL;
     }
     fclose(fr);
+}
 
+Node *createAndProcessTree() {
     Node *head = createTree();
+    if (head == NULL) {
+        fprintf(stderr, "Error creating the tree\n");
+        exit(EXIT_FAILURE);
+    }
 
+    if (N_CHEATS > 0) {
+        head->totalCost = cheat(head, N_CHEATS);
+    }
 
-    // ------------------------------------------ Actual algorithm ------------------------------------------
+    return head;
+}
 
-    long long final = head->totalCost;
-    if (N_CHEATS > 0)
-        final = cheat(head, N_CHEATS);
-    FILE *fw = fopen("output.txt", "w");
+void writeOutput(const char *filename, long long finalCost) {
+    FILE *fw = fopen(filename, "w");
+    if (fw == NULL) {
+        perror("Error opening output file");
+        exit(EXIT_FAILURE);
+    }
 
-    fprintf(fw, "%lld\n", final);
+    fprintf(fw, "%lld\n", finalCost);
     fclose(fw);
+}
 
+int main() {
+    readInput("input.txt");
+    Node *head = createAndProcessTree();
+    writeOutput("output.txt", head->totalCost);
     freeTree(head);
 
     return 0;

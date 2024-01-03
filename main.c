@@ -28,6 +28,14 @@ void readInput(const char *filename);
 Node *createAndProcessTree();
 void writeOutput(const char *filename, long long finalCost);
 
+long long min(long long a, long long b) {
+    return a < b ? a : b;
+}
+
+long long max(long long a, long long b) {
+    return a > b ? a : b;
+}
+
 void freeTree(Node *node) {
     if (node == NULL) return;
     freeTree(node->firstChild);
@@ -118,16 +126,21 @@ Node *createTree() {
     for (int i = 0; i < N; i++) {
         createNode(i, H[i][VALUE_INDEX]);
     }
-
     return head;
 }
 
-long long min(long long a, long long b) {
-    return a < b ? a : b;
-}
+Node *createAndProcessTree() {
+    Node *head = createTree();
+    if (head == NULL) {
+        fprintf(stderr, "Error creating the tree\n");
+        exit(EXIT_FAILURE);
+    }
 
-long long max(long long a, long long b) {
-    return a > b ? a : b;
+    if (N_CHEATS > 0) {
+        head->totalCost = cheat(head, N_CHEATS);
+    }
+
+    return head;
 }
 
 long long cheat(Node *node, int remaining_cheats) {
@@ -175,20 +188,6 @@ void readInput(const char *filename) {
         created[i] = NULL;
     }
     fclose(fr);
-}
-
-Node *createAndProcessTree() {
-    Node *head = createTree();
-    if (head == NULL) {
-        fprintf(stderr, "Error creating the tree\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (N_CHEATS > 0) {
-        head->totalCost = cheat(head, N_CHEATS);
-    }
-
-    return head;
 }
 
 void writeOutput(const char *filename, long long finalCost) {
